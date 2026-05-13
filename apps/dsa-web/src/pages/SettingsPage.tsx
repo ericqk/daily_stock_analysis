@@ -94,7 +94,7 @@ class SettingsContentErrorBoundary extends Component<
   static getDerivedStateFromError(error: unknown): SettingsContentErrorBoundaryState {
     return {
       hasError: true,
-      message: error instanceof Error ? error.message : 'Unknown settings render error',
+      message: error instanceof Error ? error.message : '未知的设置渲染异常',
     };
   }
 
@@ -368,7 +368,9 @@ const SettingsPage: React.FC = () => {
 
   const safeCategories = Array.isArray(categories) ? categories : [];
   const safeItemsByCategory =
-    itemsByCategory && typeof itemsByCategory === 'object' ? itemsByCategory : {};
+    itemsByCategory && typeof itemsByCategory === 'object' && !Array.isArray(itemsByCategory)
+      ? itemsByCategory
+      : {};
   const rawActiveItems = Array.isArray(safeItemsByCategory[activeCategory])
     ? safeItemsByCategory[activeCategory]
     : [];
