@@ -17,6 +17,8 @@ from src.storage import BacktestResult, BacktestSummary, DatabaseManager, Analys
 
 logger = logging.getLogger(__name__)
 
+MARKET_REVIEW_REPORT_TYPE = "market_review"
+
 
 class BacktestRepository:
     """DB access layer for backtesting."""
@@ -41,6 +43,7 @@ class BacktestRepository:
             conditions = [AnalysisHistory.created_at <= cutoff_dt]
             if code:
                 conditions.append(AnalysisHistory.code == code)
+            conditions.append(AnalysisHistory.report_type != MARKET_REVIEW_REPORT_TYPE)
 
             query = select(AnalysisHistory).where(and_(*conditions))
 

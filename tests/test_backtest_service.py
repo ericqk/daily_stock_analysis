@@ -500,6 +500,38 @@ class BacktestServiceTestCase(unittest.TestCase):
             self.assertEqual(overall.completed_count, 2)
             self.assertEqual(overall.win_count, 2)
 
+    def test_run_backtest_excludes_market_review_records(self) -> None:
+        with self.db.get_session() as session:
+            session.add(
+                AnalysisHistory(
+                    query_id="q-market-review",
+                    code="MARKET",
+                    name="大盘复盘",
+                    report_type="market_review",
+                    sentiment_score=50,
+                    operation_advice="查看复盘",
+                    trend_prediction="大盘复盘",
+                    analysis_summary="market review summary",
+                    stop_loss=None,
+                    take_profit=None,
+                    created_at=datetime(2024, 1, 3, 0, 0, 0),
+                    context_snapshot='{"enhanced_context": {"date": "2024-01-03"}}',
+                )
+            )
+            session.commit()
+
+        service = BacktestService(self.db)
+        stats = service.run_backtest(code=None, force=False, eval_window_days=3, min_age_days=0, limit=10)
+
+        self.assertEqual(stats["processed"], 1)
+        self.assertEqual(stats["saved"], 1)
+        self.assertEqual(self._count_results(), 1)
+        with self.db.get_session() as session:
+            self.assertEqual(
+                session.query(BacktestResult).filter(BacktestResult.code == "MARKET").count(),
+                0,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

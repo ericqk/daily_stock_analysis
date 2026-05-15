@@ -5,12 +5,13 @@
 
 // ============ Request Types ============
 
-export type ReportType = 'simple' | 'detailed' | 'full' | 'brief' | 'market_review';
+export type StockReportType = 'simple' | 'detailed' | 'full' | 'brief';
+export type ReportType = StockReportType | 'market_review';
 
 export interface AnalysisRequest {
   stockCode?: string;
   stockCodes?: string[];
-  reportType?: ReportType;
+  reportType?: StockReportType;
   forceRefresh?: boolean;
   asyncMode?: boolean;
   stockName?: string;
