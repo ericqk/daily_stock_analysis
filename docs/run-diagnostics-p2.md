@@ -50,11 +50,13 @@ GET /api/v1/history/{record_id}/diagnostics
 
 ### 结构化检测告警澄清
 
-- 已有自动化静态告警“可能涉及模型/provider/Base URL 变更”是**误报**。本轮仅新增 `RunDiagnosticContext` 记录与聚合逻辑，没有新增或修改 `src/config.py` 的运行时清理/重载路径，也没有改写 `Config` 对象上的 `litellm_model`、`agent_litellm_model`、`openai_base_url`、Channel `LLM_*` 等配置字段。
-- 兼容性证据如下：
-  - 代码层：`src/core/pipeline.py` 与 `src/services/analysis_service.py` 仅记录诊断证据，不改写 LLM 运行时配置；`src/agent/factory.py` 的 `_coerce_config_int` 仅用于 `agent_*` 数值参数的容错兜底。
-  - 回归覆盖：新增/更新测试 `tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_does_not_mutate_llm_route_config` 与 `tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_multi_arch_does_not_mutate_llm_route_config`，明确断言 factory 仅转换数值参数，不修改已提供的模型与 Base URL 配置。
-  - 回退路径：如需恢复到旧行为，移除本轮相关 PR 或将 `diag_*` 相关记录字段从 `context_snapshot`/`RunDiagnosticSummary` 反序列化链路中移除即可，主链路与模型/provider 配置无需额外迁移。
+- 自动化检测命中的“模型/provider/base URL 兼容风险”来源是：`src/agent/factory.py` 新增了 `agent_max_steps` 与 `agent_orchestrator_timeout_s` 的 **数字安全兜底**（`_coerce_config_int`），因此扫描可能将其误识别为配置敏感路径。
+- 本轮确认无静默迁移/清空/改写：
+  - `src/core/pipeline.py` 与 `src/services/analysis_service.py` 仅新增诊断记录，不修改 `Config` 中任何 `litellm_model`、`agent_litellm_model`、`openai_base_url` 或 channel `LLM_*` 字段。
+  - `src/agent/factory.py` 的 `_coerce_config_int` 只在构建执行参数时计算 `max_steps` 与 `timeout_seconds`，并且不写回到 `config` 对象；`litellm_model`、`agent_litellm_model`、`openai_base_url` 原值在构造链路中完整透传。
+  - 本轮不触发 `Config` 的运行时清理、持久化回写或迁移流程，因此不存在写回导致运行时配置被重写的风险。
+- 回归验证：`tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_does_not_mutate_llm_route_config` 与 `tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_multi_arch_does_not_mutate_llm_route_config` 明确断言上述字段在 `build_agent_executor` 后保持原值。
+- 回退路径：如需恢复到旧行为，移除本轮相关提交；或将 `diag_*` 字段从 `context_snapshot`/`RunDiagnosticSummary` 的反序列化链路中移除。主链路与模型/provider 配置无需额外迁移或修复。
 
 ## 验证建议
 

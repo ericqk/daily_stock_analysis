@@ -64,6 +64,9 @@ def _coerce_config_int(raw_value: object, default: int) -> int:
 
     This protects test doubles and incomplete config objects from propagating
     mock-like values (e.g., MagicMock attributes) into strict numeric paths.
+
+    This function is side-effect free: it only returns a parsed int fallback value
+    and intentionally never mutates source config attributes.
     """
 
     try:
