@@ -29,6 +29,9 @@ For English contributors: please fill in English. All fields marked (EN) accept 
 - `Refs #<issue_number>`
 - 无 Issue 时说明原因与验收标准 / If no issue, explain the motivation and acceptance criteria
 
+> 文档/治理类、仅做边界澄清且不含运行时交付的 PR，请选择 `Refs #<issue_number>`（或不填）并在 PR 类型中勾选 `docs`，避免误触发 Issue 自动关闭；不要使用 `Closes`（等同于 `Fixes`）。
+> For docs/governance-only changes that only clarify boundaries and do not include runtime delivery, use `Refs #<issue_number>` (or leave it blank) and select PR type `docs`; do not use `Closes` (equivalent to `Fixes`) to avoid auto-closing issues.
+
 ## Verification Commands And Results
 
 请填写你实际执行过的命令和关键结果（不要只写"已测试"）。  

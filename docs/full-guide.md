@@ -207,7 +207,7 @@ daily_stock_analysis/
 默认每个工作日 **18:00（北京时间）** 由默认 workflow 的 `cron` 自动执行；该触发时点仅由 workflow 的 `cron` 决定，仓库变量本身不会改变它。
 `SCHEDULE_TIME` 当前仅用于本地内置调度（`python main.py --schedule`），由启动该进程时可见的本地环境变量或 `.env` 决定，不会被 GitHub Actions 仓库变量注入；若需调整 Actions 触发时点，请修改 workflow 的 `cron`。
 > 本节为 `References #1497` 的文档边界澄清（仅文档说明，不构成运行时交付），不包含 Actions 触发机制改造；本次改动属于文档类型（docs），验收范围限定为边界说明一致性与 changelog 同步，不覆盖运行时触发控制实现，不应作为 `#1497` 的 issue 关闭依据。
-> 建议 PR 元信息标记为 `docs`，并使用 `References #1497`（而非 `Closes #1497`）以免误关闭仍待实现的运行时能力。
+> PR 元信息必须标记为 `docs`，并使用 `References #1497`（而非 `Closes #1497`）以免误关闭仍待实现的运行时能力。
 
 ---
 
