@@ -104,9 +104,10 @@ describe('AnalysisContextSummary', () => {
     expect(screen.getByText('数据限制:')).toBeInTheDocument();
     expect(screen.getByText(/基本面：抓取失败/)).toBeInTheDocument();
     expect(screen.getByText(/news_provider_timeout/)).toBeInTheDocument();
-    expect(screen.getByText(/news_context_missing/)).toBeInTheDocument();
+    expect(screen.getByText(/未进入分析输入 \(news_context_missing\)/)).toBeInTheDocument();
     expect(screen.getByText(/fundamental_pipeline_failed/)).toBeInTheDocument();
     expect(screen.getAllByText('新闻结果数: 3').some((item) => item.textContent === '新闻结果数: 3')).toBe(true);
+    expect(screen.getAllByText('本次分析输入')[0]).toBeVisible();
   });
 
   it('localizes the collapsed summary for english reports', () => {
