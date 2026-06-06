@@ -588,7 +588,14 @@ class MainScheduleModeTestCase(unittest.TestCase):
             no_market_review=False,
             allow_generate=True,
         )
-        run_market_review.assert_not_called()
+        run_market_review.assert_called_once_with(
+            notifier=pipeline.notifier,
+            analyzer=pipeline.analyzer,
+            search_service=pipeline.search_service,
+            send_notification=True,
+            merge_notification=False,
+            override_region="cn",
+        )
         refresh.assert_called_once_with(config)
         pipeline.run.assert_called_once()
 

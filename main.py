@@ -589,6 +589,7 @@ def run_full_analysis(
             and (market_review_region or '') != ''
         )
         market_report = ""
+        market_context_summary = ""
         pipeline = StockAnalysisPipeline(
             config=config,
             max_workers=args.workers,
@@ -598,7 +599,7 @@ def run_full_analysis(
             daily_market_context_allow_generate=should_generate_market_context,
         )
         if should_generate_market_context:
-            market_report = _prime_daily_market_context(
+            market_context_summary = _prime_daily_market_context(
                 config,
                 pipeline=pipeline,
                 region=market_review_region,
@@ -627,12 +628,10 @@ def run_full_analysis(
 
         # 2. 运行大盘复盘（如果启用且不是仅个股模式）
         if (
-            not market_report
-            and
             config.market_review_enabled
             and not args.no_market_review
             and should_generate_market_context
-            ):
+        ):
             review_result = _run_market_review_with_shared_lock(
                 config,
                 run_market_review,
@@ -646,6 +645,8 @@ def run_full_analysis(
             # 如果有结果，赋值给 market_report 用于后续飞书文档生成
             if review_result:
                 market_report = review_result
+            elif market_context_summary:
+                market_report = market_context_summary
 
         # Issue #190: 合并推送（个股+大盘复盘）
         if merge_notification and (results or market_report) and not args.no_notify:

@@ -125,7 +125,7 @@ def test_conservative_market_context_does_not_soften_negative_buy_language() -> 
 
 def test_conservative_market_context_does_not_soften_no_action_in_english() -> None:
     result = _result()
-    result.decision_type = "buy"
+    result.decision_type = "hold"
     result.operation_advice = "No add now; keep watching for confirmation."
 
     adjustments = apply_daily_market_context_guardrail(
@@ -139,7 +139,7 @@ def test_conservative_market_context_does_not_soften_no_action_in_english() -> N
     )
 
     assert adjustments == []
-    assert result.decision_type == "buy"
+    assert result.decision_type == "hold"
     assert result.operation_advice == "No add now; keep watching for confirmation."
 
 
@@ -163,3 +163,44 @@ def test_conservative_market_context_does_not_soften_explicit_negative_add_posit
     assert adjustments == []
     assert result.decision_type == "buy"
     assert result.operation_advice == "不建议加仓，等待窗口更清晰。"
+
+
+def test_conservative_market_context_softens_generic_buy_advice_phrase() -> None:
+    result = _result()
+    result.operation_advice = "回踩买入，强支撑上攻。"
+    result.confidence_level = "高"
+
+    adjustments = apply_daily_market_context_guardrail(
+        result,
+        daily_market_context={
+            "region": "cn",
+            "trade_date": "2026-06-06",
+            "summary": "大盘退潮，高风险，建议观望，仓位上限30%。",
+            "risk_tags": ["high_risk", "low_position_cap"],
+        },
+        report_language="zh",
+    )
+
+    assert "daily_market_context_buy_softened" in adjustments
+    assert result.decision_type == "hold"
+
+
+def test_conservative_market_context_does_not_soften_buy_when_negated_explicitly_in_english() -> None:
+    result = _result()
+    result.decision_type = "buy"
+    result.operation_advice = "No buy now; avoid adding."
+
+    adjustments = apply_daily_market_context_guardrail(
+        result,
+        daily_market_context={
+            "region": "cn",
+            "trade_date": "2026-06-06",
+            "summary": "大盘退潮，高风险，建议观望，仓位上限30%。",
+            "risk_tags": ["high_risk", "low_position_cap"],
+        },
+        report_language="en",
+    )
+
+    assert adjustments == []
+    assert result.decision_type == "buy"
+    assert result.operation_advice == "No buy now; avoid adding."

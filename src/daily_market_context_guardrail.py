@@ -12,7 +12,18 @@ from src.report_language import normalize_report_language
 _CONSERVATIVE_TAGS = {"high_risk", "market_cooling", "conservative", "low_position_cap"}
 _CONSERVATIVE_TEXT_MARKERS_ZH = ("退潮", "观望", "高风险", "谨慎", "保守", "仓位上限", "轻仓")
 _CONSERVATIVE_TEXT_MARKERS_EN = ("high risk", "risk-off", "risk off", "watch", "cautious", "conservative", "position cap")
-_AGGRESSIVE_BUY_MARKERS_ZH = ("立即买入", "马上买入", "积极买入", "激进买入", "追高", "加仓")
+_AGGRESSIVE_BUY_MARKERS_ZH = (
+    "立即买入",
+    "马上买入",
+    "建议买入",
+    "分批买入",
+    "分批低吸",
+    "回踩买入",
+    "积极买入",
+    "激进买入",
+    "追高",
+    "加仓",
+)
 _AGGRESSIVE_BUY_MARKERS_EN = ("buy now", "strong buy", "aggressive buy", "chase", "add aggressively")
 _NEGATION_HINTS_ZH = ("暂不", "不建议", "不应", "不宜", "不能", "无法", "不允许", "禁止", "避免", "未", "不要", "别", "先不")
 _NEGATION_HINTS_EN = (" not ", " do not ", "don't", "no ", "never", "avoid")
@@ -158,7 +169,7 @@ def _has_aggressive_buy_signal(result: Any, *, language: str) -> bool:
     decision_type = str(getattr(result, "decision_type", "") or "").lower()
     if decision_type == "buy":
         advice = str(getattr(result, "operation_advice", "") or "")
-        return not advice or _contains_any(advice, _buy_markers(language), language=language)
+        return not _contains_negation(advice, language=language)
     advice = str(getattr(result, "operation_advice", "") or "")
     return _contains_any(advice, _buy_markers(language), language=language)
 
@@ -182,6 +193,12 @@ def _contains_any(text: str, markers: tuple[str, ...], *, language: str = "zh") 
                 return True
             marker_pos += len(marker_lower)
     return False
+
+
+def _contains_negation(text: str, *, language: str) -> bool:
+    lowered = str(text).lower()
+    hints = _NEGATION_HINTS_ZH if language == "zh" else _NEGATION_HINTS_EN
+    return any(hint in lowered for hint in hints)
 
 
 def _is_high_confidence(value: Any) -> bool:

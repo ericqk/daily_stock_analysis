@@ -111,7 +111,7 @@ P3 当时不持久化完整 pack，不新增 API/Web/Bot/Desktop 字段，不改
 
 普通分析与 Agent 分析只接收低敏字段：`daily_market_context`（region、trade_date、summary、risk_tags、source、可选 position_cap）和 `daily_market_context_summary` Prompt 段，不传递完整 `market_review_payload`、原始新闻、密钥或通知配置。普通分析 Prompt 在市场阶段段落后、技术面数据前插入大盘摘要；Agent 单体与多 Agent 路径在 market phase 后、pre-fetched 数据前插入同一摘要。Agent 自由聊天只在调用方已经提供 `daily_market_context` / `daily_market_context_summary` 时注入，不为每次聊天自动触发大盘复盘。
 
-结果后处理新增保守大盘环境护栏：当摘要或标签显示 `high_risk`、`market_cooling`、`conservative`、`low_position_cap`，且模型给出 `buy` / 立即买入 / 追高 / 激进加仓等建议时，会把建议软化为观望或小仓等待确认，并把高置信度降为中等。该护栏只修改当次 `AnalysisResult` 与 dashboard 中的低敏限制说明，不新增数据库表或 API 字段。回滚方式为撤销 #1381 相关服务、Prompt 注入和 guardrail 代码，既有大盘复盘历史记录保持兼容。
+结果后处理新增保守大盘环境护栏：当摘要或标签显示 `high_risk`、`market_cooling`、`conservative`、`low_position_cap`，且处于保守/高风险语境下时，模型给出 `buy` 决策（含“立即买入/追高/激进加仓”等买入类建议）会被软化为观望或小仓等待确认，并把高置信度降为中等。该护栏只修改当次 `AnalysisResult` 与 dashboard 中的低敏限制说明，不新增数据库表或 API 字段。回滚方式为撤销 #1381 相关服务、Prompt 注入和 guardrail 代码，既有大盘复盘历史记录保持兼容。
 
 ## P4 历史记录、任务状态与 Web 可见性
 
