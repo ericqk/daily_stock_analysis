@@ -107,9 +107,10 @@ P3 当时不持久化完整 pack，不新增 API/Web/Bot/Desktop 字段，不改
 
 #1381 在 AnalysisContextPack 之外新增一个小型每日大盘环境摘要通道，避免把 `market_review` / `market_light` 直接 pack 化。`StockAnalysisPipeline` 在 `MARKET_REVIEW_ENABLED=true` 时按个股市场（`cn` / `hk` / `us`）加载当日大盘上下文：优先复用 `analysis_history(code=MARKET, report_type=market_review)` 中同日同市场记录；没有同日记录时才调用 `run_market_review(..., return_structured=True, send_notification=False)` 生成本次上下文，且通过进程内 cache 避免同一 Pipeline 重复生成，并在 CLI/定时任务并发路径上通过 market review lock 串行化生成。
 
-**范围说明：**`#1381` 仅覆盖后端大盘上下文注入、每日上下文复用控制与保守护栏；本次变更不包含独立 API、Web 流水线阶段页、四阶段日报结构化存储或新增日报表状态字段（对应内容为后续计划）。
-**兼容性说明：**`#1381` 未改动 `provider/model/base URL`、`默认模型`、配置清理/迁移语义，不新增数据库或运行时配置表变更；回滚方式为常规发布回滚（撤销本次相关代码），已落库历史 `analysis_context`（含历史 `MARKET` 记录）保持现网可读兼容。
-**验收边界：**当前 PR 只需要覆盖 `main.py` 调度入口（含 schedule/dry-run）、`tests/test_main_schedule_mode.py`，以及 `main` 与 `StockAnalysisPipeline` 的普通分析/Agent 分析大盘上下文注入和 `tests/test_daily_market_context*.py`、`tests/test_daily_market_context_guardrail.py`、`tests/test_agent_executor.py` 的回归；未宣称已交付独立 API、Web 阶段页、四阶段日报结构化持久化或新增状态表能力。
+**Background（PR 描述对齐）：**`#1381` 聚焦单股分析的当日大盘上下文复用与回退控制，不改变现有日内阶段、日报或状态建模架构。该说明与当前 diff 与 `docs/CHANGELOG.md` [Unreleased] 中的 #1381 条目保持一致。
+**Scope（本轮实现范围）：**`#1381` 仅覆盖后端大盘上下文注入、每日上下文复用控制与保守护栏；本次变更不包含独立 API、Web 流水线阶段页、四阶段日报结构化存储或新增日报状态字段（对应内容为后续计划）。
+**Acceptance Criteria（验收边界）：**当前 PR 只需要覆盖 `main.py` 调度入口（含 schedule/dry-run）、`tests/test_main_schedule_mode.py`，以及 `main` 与 `StockAnalysisPipeline` 的普通分析/Agent 分析大盘上下文注入和 `tests/test_daily_market_context*.py`、`tests/test_daily_market_context_guardrail.py`、`tests/test_agent_executor.py` 的回归；未宣称已交付独立 API、Web 阶段页、四阶段日报结构化持久化或新增状态表能力。
+**Compatibility/Risk（兼容与风险）：**`#1381` 未改动 `provider/model/base URL`、`默认模型`、配置清理/迁移语义，不新增数据库或运行时配置表变更；回滚方式为常规发布回滚（撤销本次相关代码），已落库历史 `analysis_context`（含历史 `MARKET` 记录）保持现网可读兼容；必要时配合重启并清理 runtime 覆盖项，恢复用户保存值。  
 **兼容性证据：**本轮未新增 provider/model/base_url 迁移逻辑、默认模型回退/覆盖逻辑或配置清理逻辑，相关配置语义仍由既有 `LLM` 配置链路承载，回滚路径同样为常规发布回滚，必要时配合重启/清理 runtime 覆盖项恢复用户保存值（与现网既有说明一致）。
 
 普通分析与 Agent 分析只接收低敏字段：`daily_market_context`（region、trade_date、summary、risk_tags、source、可选 position_cap）和 `daily_market_context_summary` Prompt 段，不传递完整 `market_review_payload`、原始新闻、密钥或通知配置。普通分析 Prompt 在市场阶段段落后、技术面数据前插入大盘摘要；Agent 单体与多 Agent 路径在 market phase 后、pre-fetched 数据前插入同一摘要。Agent 自由聊天只在调用方已经提供 `daily_market_context` / `daily_market_context_summary` 时注入，不为每次聊天自动触发大盘复盘。
