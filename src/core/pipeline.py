@@ -2867,10 +2867,54 @@ class StockAnalysisPipeline:
         if not stock_codes:
             logger.error("未配置自选股列表，请在 .env 文件中设置 STOCK_LIST")
             return []
-        
+
         logger.info(f"===== 开始分析 {len(stock_codes)} 只股票 =====")
         logger.info(f"股票列表: {', '.join(stock_codes)}")
         logger.info(f"并发数: {self.max_workers}, 模式: {'仅获取数据' if dry_run else '完整分析'}")
+
+        # 美股过滤：价格/成交量门槛
+        filtered_codes = []
+        skipped_codes = []
+        us_min_price = getattr(self.config, 'us_min_price', 0.0) or 0.0
+        us_min_volume = getattr(self.config, 'us_min_volume', 0) or 0
+        if us_min_price > 0 or us_min_volume > 0:
+            for code in stock_codes:
+                market = get_market_for_stock(code)
+                if market != 'us':
+                    filtered_codes.append(code)
+                    continue
+                quote = None
+                try:
+                    if getattr(self.config, 'enable_realtime_quote', True):
+                        quote = self.fetcher_manager.get_realtime_quote(code, log_final_failure=False)
+                except Exception as exc:
+                    logger.debug(f"[美股过滤] {code} 获取实时行情失败: {exc}")
+                price = getattr(quote, 'price', None) if quote else None
+                volume = getattr(quote, 'volume', None) if quote else None
+                passed = True
+                reasons = []
+                if us_min_price > 0 and not (isinstance(price, (int, float)) and price > us_min_price):
+                    passed = False
+                    reasons.append(f"price={price}")
+                if us_min_volume > 0 and not (isinstance(volume, int) and volume > us_min_volume):
+                    passed = False
+                    reasons.append(f"volume={volume}")
+                if passed:
+                    filtered_codes.append(code)
+                else:
+                    skipped_codes.append((code, ', '.join(reasons)))
+                    logger.info(f"[美股过滤] 跳过 {code}: {', '.join(reasons)}")
+            if skipped_codes:
+                logger.warning(
+                    "US stock filter removed %d/%d tickers: %s",
+                    len(skipped_codes),
+                    len(stock_codes),
+                    '; '.join([f"{c}({r})" for c, r in skipped_codes]),
+                )
+            stock_codes = filtered_codes
+            if not stock_codes:
+                logger.error("美股过滤后无剩余股票可分析，请检查 US_MIN_PRICE / US_MIN_VOLUME 配置")
+                return []
 
         # 冻结本轮运行的统一参考时间，避免跨市场收盘边界时同批股票使用不同目标交易日。
         resume_reference_time = current_time or datetime.now(timezone.utc)

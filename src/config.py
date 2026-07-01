@@ -1028,6 +1028,10 @@ class Config:
     enable_chip_distribution: bool = True
     # 东财接口补丁开关
     enable_eastmoney_patch: bool = False
+    # 美股过滤：价格下限（USD），0 表示不限制
+    us_min_price: float = 0.0
+    # 美股过滤：成交量下限（股），0 表示不限制
+    us_min_volume: int = 0
     # 实时行情数据源优先级（逗号分隔）
     # 推荐顺序：tencent > akshare_sina > efinance > akshare_em > tushare
     # - tencent: 腾讯财经，有量比/换手率/市盈率等，单股查询稳定（推荐）
@@ -1970,6 +1974,8 @@ class Config:
             enable_chip_distribution=os.getenv('ENABLE_CHIP_DISTRIBUTION', 'true').lower() == 'true',
             # 东财接口补丁开关
             enable_eastmoney_patch=os.getenv('ENABLE_EASTMONEY_PATCH', 'false').lower() == 'true',
+            us_min_price=parse_env_float(os.getenv('US_MIN_PRICE'), 0.0, field_name='US_MIN_PRICE', minimum=0.0),
+            us_min_volume=parse_env_int(os.getenv('US_MIN_VOLUME'), 0, field_name='US_MIN_VOLUME', minimum=0),
             # 实时行情数据源优先级：
             # - tencent: 腾讯财经，有量比/换手率/PE/PB等，单股查询稳定（推荐）
             # - akshare_sina: 新浪财经，基本行情稳定，但无量比

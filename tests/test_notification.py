@@ -1153,11 +1153,6 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         self.assertIn("22.45%", out)
         self.assertIn("15.23%", out)
         self.assertIn("91.55%", out)
-        # 股东回报
-        self.assertIn("股东回报", out)
-        self.assertIn("30.8760 元", out)
-        self.assertIn("1.85%", out)
-        self.assertIn("2024-06-26", out)
         # 关联板块（白酒带行业信号；MSCI中国 带概念信号）
         self.assertIn("关联板块", out)
         self.assertIn("| 板块 | 类型 | 板块表现 | 板块涨跌幅 |", out)
@@ -1221,14 +1216,13 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         out = service.generate_single_stock_report(result)
 
         self.assertNotIn("财务摘要", out)
-        self.assertNotIn("股东回报", out)
         self.assertNotIn("关联板块", out)
 
     @mock.patch("src.notification.get_config")
     def test_generate_single_stock_report_handles_partial_fundamental_context(
         self, mock_get_config: mock.MagicMock
     ):
-        """Only dividend data present — render shareholder return, skip the other two."""
+        """Only dividend data present — shareholder return block is disabled."""
         mock_get_config.return_value = _make_config(report_renderer_enabled=False)
         service = NotificationService()
         result = AnalysisResult(
@@ -1255,8 +1249,7 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         out = service.generate_single_stock_report(result)
 
         self.assertNotIn("财务摘要", out)
-        self.assertIn("股东回报", out)
-        self.assertIn("0.5000 元", out)
+        self.assertNotIn("股东回报", out)
         self.assertNotIn("关联板块", out)
 
     @mock.patch("src.notification.get_config")
@@ -1562,7 +1555,6 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         out = service.generate_dashboard_report([result], report_date="2026-05-20")
 
         self.assertIn("财务摘要", out)
-        self.assertIn("股东回报", out)
         self.assertIn("关联板块", out)
         self.assertIn("白酒", out)
         self.assertIn("领涨", out)

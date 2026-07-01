@@ -2078,7 +2078,7 @@ class NotificationService(
         }
 
     def _append_fundamental_blocks(self, lines: List[str], result: AnalysisResult) -> None:
-        """Append 财务摘要 / 股东回报 / 关联板块 markdown blocks.
+        """Append 财务摘要 / 关联板块 markdown blocks.
 
         Each block is only rendered when at least one cell has data; this keeps
         the email compact when the fundamental pipeline returned partial/failed
@@ -2089,7 +2089,6 @@ class NotificationService(
         labels = get_report_labels(report_language)
 
         self._append_financial_summary(lines, blocks, labels)
-        self._append_shareholder_return(lines, blocks, labels)
         self._append_related_boards(lines, blocks, labels)
 
     def _append_financial_summary(
@@ -2129,50 +2128,6 @@ class NotificationService(
                 f"| {cells['report_date']} | {cells['revenue']} | {cells['net_profit']} | "
                 f"{cells['operating_cash_flow']} | {cells['roe']} | {cells['revenue_yoy']} | "
                 f"{cells['net_profit_yoy']} | {cells['gross_margin']} |"
-            ),
-            "",
-        ])
-
-    def _append_shareholder_return(
-        self,
-        lines: List[str],
-        blocks: Dict[str, Any],
-        labels: Dict[str, str],
-    ) -> None:
-        dividend = blocks.get("dividend") or {}
-        report = blocks.get("financial_report") or {}
-        # Dividends are paid in the trading currency (yfinance `info.currency`)
-        # which can differ from the financial-statement currency (e.g. HK ADRs
-        # often report `financialCurrency=CNY` but pay dividends in HKD).
-        dividend_currency = dividend.get("currency") if isinstance(dividend.get("currency"), str) else None
-        if not dividend_currency:
-            dividend_currency = report.get("currency") if isinstance(report.get("currency"), str) else None
-        events = dividend.get("events") if isinstance(dividend.get("events"), list) else []
-        latest_event = events[0] if events else {}
-        if not isinstance(latest_event, dict):
-            latest_event = {}
-
-        ttm_event_count = dividend.get("ttm_event_count")
-        cells = {
-            "ttm_cash": self._format_per_share(dividend.get("ttm_cash_dividend_per_share"), dividend_currency),
-            "ttm_count": str(ttm_event_count) if isinstance(ttm_event_count, int) else "N/A",
-            "ttm_yield": self._format_percent(dividend.get("ttm_dividend_yield_pct")),
-            "latest_ex": self._format_text(latest_event.get("ex_dividend_date") or latest_event.get("event_date")),
-        }
-        if all(v == "N/A" for v in cells.values()):
-            return
-
-        lines.extend([
-            f"### 💵 {labels['shareholder_return_heading']}",
-            "",
-            (
-                f"| {labels['ttm_cash_dividend_label']} | {labels['ttm_event_count_label']} | "
-                f"{labels['ttm_dividend_yield_label']} | {labels['latest_ex_dividend_label']} |"
-            ),
-            "|---------------------:|----------:|--------:|:--------:|",
-            (
-                f"| {cells['ttm_cash']} | {cells['ttm_count']} | "
-                f"{cells['ttm_yield']} | {cells['latest_ex']} |"
             ),
             "",
         ])
