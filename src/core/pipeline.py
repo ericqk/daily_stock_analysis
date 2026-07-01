@@ -2883,27 +2883,45 @@ class StockAnalysisPipeline:
                 if market != 'us':
                     filtered_codes.append(code)
                     continue
+
                 quote = None
+                quote_source = 'none'
+                quote_error = None
                 try:
                     if getattr(self.config, 'enable_realtime_quote', True):
                         quote = self.fetcher_manager.get_realtime_quote(code, log_final_failure=False)
+                        if quote is not None:
+                            quote_source = 'realtime'
                 except Exception as exc:
+                    quote_error = exc
                     logger.debug(f"[美股过滤] {code} 获取实时行情失败: {exc}")
+
                 price = getattr(quote, 'price', None) if quote else None
                 volume = getattr(quote, 'volume', None) if quote else None
-                passed = True
+
+                # 当实时行情不可用时，不把美股整批静默过滤掉，保留分析并记录原因。
+                if price is None and volume is None:
+                    filtered_codes.append(code)
+                    if quote_error:
+                        logger.info(
+                            f"[美股过滤] {code} 实时行情不可用({quote_source}/error)，保留分析以避免数据源故障导致整批美股缺失"
+                        )
+                    else:
+                        logger.info(f"[美股过滤] {code} 实时行情未返回，保留分析")
+                    continue
+
                 reasons = []
                 if us_min_price > 0 and not (isinstance(price, (int, float)) and price > us_min_price):
-                    passed = False
                     reasons.append(f"price={price}")
                 if us_min_volume > 0 and not (isinstance(volume, int) and volume > us_min_volume):
-                    passed = False
                     reasons.append(f"volume={volume}")
-                if passed:
-                    filtered_codes.append(code)
-                else:
+
+                if reasons:
                     skipped_codes.append((code, ', '.join(reasons)))
                     logger.info(f"[美股过滤] 跳过 {code}: {', '.join(reasons)}")
+                else:
+                    filtered_codes.append(code)
+
             if skipped_codes:
                 logger.warning(
                     "US stock filter removed %d/%d tickers: %s",

@@ -384,6 +384,9 @@ jobs:
           MARKET_REVIEW_ENABLED: ${{ vars.MARKET_REVIEW_ENABLED || secrets.MARKET_REVIEW_ENABLED || 'true' }}
           ANALYSIS_DELAY: ${{ vars.ANALYSIS_DELAY || secrets.ANALYSIS_DELAY || '0' }}
           TRADING_DAY_CHECK_ENABLED: ${{ vars.TRADING_DAY_CHECK_ENABLED || secrets.TRADING_DAY_CHECK_ENABLED || 'true' }}
+          # 美股过滤：价格/成交量门槛，0 表示不限制
+          US_MIN_PRICE: ${{ vars.US_MIN_PRICE || secrets.US_MIN_PRICE || '0' }}
+          US_MIN_VOLUME: ${{ vars.US_MIN_VOLUME || secrets.US_MIN_VOLUME || '0' }}
           
           # ==========================================
           # 系统配置
